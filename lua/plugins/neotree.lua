@@ -8,6 +8,7 @@ return {
 	},
 	config = function()
 		require("neo-tree").setup({
+
 			filesystem = {
 				follow_current_file = { enabled = true },
 				filtered_items = {
@@ -16,9 +17,9 @@ return {
 					hide_dotfiles = false,
 					hide_gitignored = false,
 				},
+				hijack_netrw_behavior = "open_default",
 			},
 		})
-		vim.keymap.set("n", "<Leader>n", "<Cmd>Neotree reveal left<CR>")
-		vim.keymap.set("n", "<Leader>nn", "<Cmd>Neotree close<CR>")
+		vim.keymap.set("n", "<Leader>n", "<Cmd>Neotree toggle<CR>")
 	end,
 }
