@@ -1,9 +1,11 @@
+-- Globals
 vim.g.mapleader = " "
 vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.clipboard = "unnamedplus"
 vim.keymap.set("n", "<Leader>w", ":w<CR>", {})
 vim.keymap.set("n", "<Leader>q", ":q<CR>", {})
+vim.keymap.set("n", "<C-v>", ":vsplit<CR>", {})
 
 -- Verticals
 vim.keymap.set("n", "<C-u>", "<C-u>zz", {})
@@ -20,15 +22,12 @@ vim.keymap.set("", "<Down>", "", {})
 vim.keymap.set("", "<Left>", "", {})
 vim.keymap.set("", "<Right>", "", {})
 
--- Window Navigation <C-ww> -  toggle
-vim.keymap.set("n", "<C-h>", "<C-w>h", {})
-vim.keymap.set("n", "<C-l>", "<C-w>l", {})
-vim.keymap.set("n", "<C-j>", "<C-w>j", {})
-vim.keymap.set("n", "<C-k>", "<C-w>k", {})
-vim.keymap.set("n", "<C-v>", ":vsplit<CR>", {})
+vim.keymap.set('n', 'C-k>' , ':wincmd k<CR>')
+vim.keymap.set('n', 'C-h>' , ':wincmd h<CR>')
+vim.keymap.set('n', 'C-j>' , ':wincmd j<CR>')
+vim.keymap.set('n', 'C-l>' , ':wincmd l<CR>')
 
---tab
-vim.keymap.set("n", "<C-t>", ":tabnext<CR>", {})
+
 
 -- Global debug
 P = function(v)
