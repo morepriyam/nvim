@@ -16,12 +16,7 @@ vim.keymap.set("n", "n", "nzz", {})
 vim.keymap.set("n", "N", "Nzz", {})
 vim.keymap.set("n", "<esc><esc>", ":noh<CR>", {})
 
--- Disable arrow
-vim.keymap.set("", "<Up>", "", {})
-vim.keymap.set("", "<Down>", "", {})
-vim.keymap.set("", "<Left>", "", {})
-vim.keymap.set("", "<Right>", "", {})
-
+-- Navigate
 vim.keymap.set('n', 'C-k>' , ':wincmd k<CR>')
 vim.keymap.set('n', 'C-h>' , ':wincmd h<CR>')
 vim.keymap.set('n', 'C-j>' , ':wincmd j<CR>')
