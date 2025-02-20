@@ -15,13 +15,9 @@ return {
 			vim.keymap.set("n", "<leader>pof", builtin.oldfiles, { desc = "Recent Files" })
 			vim.keymap.set("n", "<leader>pb", builtin.buffers, { desc = "Open Buffers" })
 			vim.keymap.set("n", "<leader>pht", builtin.help_tags, { desc = "Help Tags" })
-			vim.keymap.set("n", "<leader>fcf", function()
+			vim.keymap.set("n", "<leader>ff", function()
 				builtin.current_buffer_fuzzy_find({ layout_strategy = "vertical" })
 			end, { desc = "Current Buffer Fuzzy Find" })
-			-- Git-related keymaps
-			vim.keymap.set("n", "<leader>gf", builtin.git_files, { desc = "Git Files" })
-			vim.keymap.set("n", "<leader>gb", builtin.git_branches, { desc = "Git Branches" })
-			vim.keymap.set("n", "<leader>gs", builtin.git_status, { desc = "Git Status" })
 
 			-- Telescope setup
 			require("telescope").setup({

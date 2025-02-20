@@ -20,6 +20,6 @@ return {
 				hijack_netrw_behavior = "open_default",
 			},
 		})
-		vim.keymap.set("n", "<Leader>n", "<Cmd>Neotree toggle<CR>")
+		vim.keymap.set("n", "<Leader>n", "<Cmd>Neotree toggle right<CR>")
 	end,
 }
