@@ -77,9 +77,9 @@ return {
 						configuration = {
 							runtimes = {
 								{
-									name = "JavaSE-17",
+									name = "JavaSE-21",
 									path =
-									"/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home",
+									"/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home",
 								},
 							},
 						},
