@@ -18,7 +18,9 @@ return {
 		"ClaudeCodeCloseAllDiffs",
 	},
 	opts = {
-		terminal_cmd = "/Users/priyam/.local/bin/claude", -- absolute path: works regardless of nvim's PATH
+		-- `env TERM=xterm-256color` forces a TERM the markdown renderer handles
+		-- better; works whether the plugin execs argv directly or via a shell.
+		terminal_cmd = "env TERM=xterm-256color /Users/priyam/.local/bin/claude", -- absolute path: works regardless of nvim's PATH
 		diff_opts = {
 			layout = "inline", -- VSCode-style unified diff (red/strikethrough + green inline)
 		},
