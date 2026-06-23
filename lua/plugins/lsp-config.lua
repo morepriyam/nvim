@@ -10,31 +10,84 @@ return {
 	},
 	{
 		"neovim/nvim-lspconfig",
+		dependencies = {
+			"b0o/schemastore.nvim", -- JSON schemas (package.json, tsconfig, etc.) for jsonls
+		},
 		config = function()
-			local on_attach = function(_, bufnr)
-				local opts = { noremap = true, silent = true, buffer = bufnr }
-				vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
-				vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
-				vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
-				vim.keymap.set("n", "gr", require("telescope.builtin").lsp_references, opts)
-				vim.keymap.set({ "n", "v" }, "<Leader>ca", vim.lsp.buf.code_action, opts)
-				vim.keymap.set("n", "<space>rn", vim.lsp.buf.rename, opts)
-			end
-
 			local capabilities = require("cmp_nvim_lsp").default_capabilities()
-			local lspconfig = require("lspconfig")
 
-			local servers = { "lua_ls", "ts_ls", "prismals", "tailwindcss", "rust_analyzer" }
+			-- Servers enabled directly via lspconfig.
+			-- NOTE: rust_analyzer is intentionally absent here -- rustaceanvim manages Rust.
+			local servers = {
+				"lua_ls",
+				"ts_ls",
+				"prismals",
+				"tailwindcss",
+				"pyright", -- Python: types / completion
+				"ruff", -- Python: lint + format
+				"gopls", -- Go: LSP + formatting
+				"clangd", -- C/C++: LSP + formatting
+				"html",
+				"cssls",
+				"jsonls",
+			}
+
 			require("mason-lspconfig").setup({
-				ensure_installed = servers,
+				-- Install the enabled servers plus rust_analyzer (used by rustaceanvim).
+				ensure_installed = vim.list_extend(vim.deepcopy(servers), { "rust_analyzer" }),
+				-- We enable servers explicitly below. Without this, mason-lspconfig v2
+				-- auto-enables every mason package with an lsp/ config -- including
+				-- formatters like stylua (launched as `stylua --lsp`), which then crash.
+				automatic_enable = false,
 			})
 
-			for _, server in ipairs(servers) do
-				lspconfig[server].setup({
-					capabilities = capabilities,
-					on_attach = on_attach,
-				})
-			end
+			-- Apply default capabilities to every server (Neovim 0.11+ API)
+			vim.lsp.config("*", {
+				capabilities = capabilities,
+			})
+
+			-- JSON: validate against schemas from SchemaStore
+			vim.lsp.config("jsonls", {
+				settings = {
+					json = {
+						schemas = require("schemastore").json.schemas(),
+						validate = { enable = true },
+					},
+				},
+			})
+
+			-- Enable the servers; nvim-lspconfig ships the per-server lsp/*.lua configs
+			vim.lsp.enable(servers)
+
+			-- Buffer-local keymaps + inlay hints whenever an LSP attaches
+			vim.api.nvim_create_autocmd("LspAttach", {
+				callback = function(ev)
+					local opts = { noremap = true, silent = true, buffer = ev.buf }
+					vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+					vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+					vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
+					vim.keymap.set("n", "gr", require("telescope.builtin").lsp_references, opts)
+					vim.keymap.set({ "n", "v" }, "<Leader>ca", vim.lsp.buf.code_action, opts)
+					vim.keymap.set("n", "<space>rn", vim.lsp.buf.rename, opts)
+
+					local client = vim.lsp.get_client_by_id(ev.data.client_id)
+
+					-- Let prettier (none-ls) own formatting for web filetypes; silence the
+					-- overlapping LSP formatters so they don't fight prettier.
+					if client and (client.name == "ts_ls" or client.name == "html" or client.name == "cssls" or client.name == "jsonls") then
+						client.server_capabilities.documentFormattingProvider = false
+						client.server_capabilities.documentRangeFormattingProvider = false
+					end
+
+					-- Inlay hints (inline types / parameter names) when supported
+					if client and client:supports_method("textDocument/inlayHint") then
+						vim.lsp.inlay_hint.enable(true, { bufnr = ev.buf })
+					end
+					vim.keymap.set("n", "<Leader>ih", function()
+						vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = ev.buf }), { bufnr = ev.buf })
+					end, opts)
+				end,
+			})
 		end,
 	},
 	{
@@ -222,12 +275,5 @@ return {
 				tailwind = true,
 			},
 		},
-	},
-	{ "mfussenegger/nvim-dap" },
-	{
-		"jay-babu/mason-nvim-dap.nvim",
-		config = function()
-			require("mason-nvim-dap").setup({ ensure_installed = { "java-debug-adapter", "java-test" } })
-		end,
 	},
 }

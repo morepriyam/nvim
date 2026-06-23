@@ -20,6 +20,8 @@ return {
 				hijack_netrw_behavior = "open_default",
 			},
 		})
-		vim.keymap.set("n", "<Leader>n", "<Cmd>Neotree toggle<CR>")
+		vim.keymap.set("n", "<Leader>n", "<Cmd>Neotree toggle<CR>", { desc = "Neo-tree (files)" })
+		-- Git changes in neo-tree style (changed files in the sidebar)
+		vim.keymap.set("n", "<Leader>gt", "<Cmd>Neotree toggle git_status<CR>", { desc = "Neo-tree git changes" })
 	end,
 }

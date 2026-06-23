@@ -3,7 +3,7 @@ return {
 	config = function()
 		require("lualine").setup({
 			options = {
-				theme = "palenight",
+				theme = "codedark", -- VSCode-style statusline
 			},
 		})
 	end,

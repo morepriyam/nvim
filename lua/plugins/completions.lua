@@ -42,12 +42,10 @@ return {
 				}, {
 					{ name = "buffer" },
 				}),
+				formatting = {
+					format = require("tailwindcss-colorizer-cmp").formatter,
+				},
 			})
-		end,
-		opts = function(_, opts)
-			opts.formatting = {
-				format = require("tailwindcss-colorizer-cmp").formatter,
-			}
 		end,
 	},
 }

@@ -2,7 +2,11 @@ return {
 	{
 		"nvim-telescope/telescope.nvim",
 		tag = "0.1.8",
-		dependencies = { "nvim-lua/plenary.nvim" },
+		dependencies = {
+			"nvim-lua/plenary.nvim",
+			{ "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
+			"nvim-telescope/telescope-ui-select.nvim",
+		},
 		config = function()
 			local builtin = require("telescope.builtin")
 
@@ -18,12 +22,8 @@ return {
 			vim.keymap.set("n", "<leader>fcf", function()
 				builtin.current_buffer_fuzzy_find({ layout_strategy = "vertical" })
 			end, { desc = "Current Buffer Fuzzy Find" })
-			-- Git-related keymaps
-			vim.keymap.set("n", "<leader>gf", builtin.git_files, { desc = "Git Files" })
-			vim.keymap.set("n", "<leader>gb", builtin.git_branches, { desc = "Git Branches" })
-			vim.keymap.set("n", "<leader>gs", builtin.git_status, { desc = "Git Status" })
 
-			-- Telescope setup
+			-- Telescope setup (single call registering both extensions)
 			require("telescope").setup({
 				extensions = {
 					fzf = {
@@ -32,25 +32,15 @@ return {
 						override_file_sorter = true, -- Override file sorter with fzf
 						case_mode = "respect_case", -- Respect case when searching
 					},
-				},
-			})
-
-			-- Load extensions
-			require("telescope").load_extension("fzf")
-		end,
-	},
-	{
-		"nvim-telescope/telescope-ui-select.nvim",
-		config = function()
-			require("telescope").setup({
-				extensions = {
 					["ui-select"] = {
 						require("telescope.themes").get_dropdown({}),
 					},
 				},
 			})
+
+			-- Load extensions
+			require("telescope").load_extension("fzf")
 			require("telescope").load_extension("ui-select")
 		end,
 	},
-	{ "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
 }

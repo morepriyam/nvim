@@ -1,11 +1,5 @@
-function ColorMyPencils(color)
-	color = color or "rose-pine"
-	vim.cmd.colorscheme(color)
-
-	vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
-	vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
-end
-
+-- Rose Pine kept installed as an alternative theme (NOT active).
+-- Switch to it any time with:  :colorscheme rose-pine
 return {
 	"rose-pine/neovim",
 	name = "rose-pine",
@@ -16,9 +10,5 @@ return {
 				italic = false,
 			},
 		})
-
-		vim.cmd("colorscheme rose-pine")
-
-		ColorMyPencils()
 	end,
 }
