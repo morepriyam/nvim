@@ -35,6 +35,10 @@ vim.keymap.set("n", "<C-d>", "<C-d>zz", {})
 -- Navigate (split/pane navigation handled by vim-tmux-navigator: <C-h/j/k/l>)
 vim.keymap.set("n", "<Leader>W", ":set wrap!<CR>", {})
 
+-- Exit terminal mode with a double-tap of <Esc>. A single <Esc> is left alone
+-- so it still reaches terminal programs that use it (e.g. Claude Code's interrupt).
+vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
+
 -- Global debug
 P = function(v)
 	print(vim.inspect(v))
