@@ -9,6 +9,23 @@ vim.opt.numberwidth = 2
 vim.opt.clipboard = "unnamedplus"
 vim.opt.termguicolors = true -- required by nvim-colorizer and true-color themes
 
+-- Auto-reload buffers when the file changes on disk (e.g. Claude edits it).
+-- `autoread` is on by default, but Neovim only re-reads on an explicit check,
+-- so we run `checktime` on focus/idle to pull external changes in instantly.
+vim.opt.autoread = true
+vim.opt.updatetime = 1000 -- CursorHold fires after 1s idle (default 4s)
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI", "TermClose", "TermLeave" }, {
+	pattern = "*",
+	command = "checktime",
+})
+-- Tell me when a reload actually happened.
+vim.api.nvim_create_autocmd("FileChangedShellPost", {
+	pattern = "*",
+	callback = function()
+		vim.notify("File changed on disk — buffer reloaded", vim.log.levels.WARN)
+	end,
+})
+
 -- Mouse
 vim.opt.mouse = "a"                 -- enable mouse in all modes (incl. command-line)
 vim.opt.mousescroll = "ver:2,hor:4" -- smoother/faster scroll

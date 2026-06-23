@@ -11,7 +11,7 @@ return {
 			{ "<leader>h", group = "Git Hunks" },
 			{ "<leader>d", group = "Debug" },
 			{ "<leader>r", group = "Rust / Rename" },
-			{ "<leader>p", group = "Find / Pickers" },
+			{ "<leader>f", group = "Find / Pickers" },
 			{ "<leader>c", group = "Code" },
 		},
 	},

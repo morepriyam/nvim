@@ -15,7 +15,7 @@ return {
 					vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
 					vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
 					vim.keymap.set("n", "gr", require("telescope.builtin").lsp_references, opts)
-					vim.keymap.set("n", "<space>rn", vim.lsp.buf.rename, opts)
+					vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
 					-- Grouped code actions (rustaceanvim's enhanced version)
 					vim.keymap.set({ "n", "v" }, "<Leader>ca", function()
 						vim.cmd.RustLsp("codeAction")

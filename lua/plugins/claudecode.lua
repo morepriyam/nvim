@@ -22,7 +22,7 @@ return {
 		-- better; works whether the plugin execs argv directly or via a shell.
 		terminal_cmd = "env TERM=xterm-256color /Users/priyam/.local/bin/claude", -- absolute path: works regardless of nvim's PATH
 		diff_opts = {
-			layout = "inline", -- VSCode-style unified diff (red/strikethrough + green inline)
+			layout = "unified", -- VSCode-style unified diff (red/strikethrough + green inline)
 		},
 	},
 	keys = {
