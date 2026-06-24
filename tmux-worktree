@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+#
+# tmux-worktree — manage git worktrees laid out as bare-repo projects under
+# ~/developer, and open/switch a tmux session per worktree. Sibling to
+# tmux-sessionizer.
+#
+#   ~/developer/pulse/
+#   ├── .git/        <- bare clone (HEAD, objects, refs…)
+#   ├── main/        <- worktree on the default branch
+#   ├── feature-x/   <- worktree on branch feature-x
+#   └── feature-y/   <- worktree on branch feature-y
+#
+# Each worktree dir, its branch, and its tmux session all share a name.
+#
+# Usage:
+#   tmux-worktree clone [git-url]   clone a repo into the bare+worktree layout
+#   tmux-worktree new [name]        make a new worktree in the current repo
+#
+# Switching between worktrees is handled by tmux-sessionizer, which lists every
+# worktree as "project/branch" in the same fzf picker as whole projects.
+#
+# With no positional arg the subcommands prompt via fzf, which makes them
+# pleasant to drive from a tmux display-popup.
+
+set -euo pipefail
+
+dev_dir="$HOME/developer"
+
+# --- shared: open or switch to a tmux session rooted at $dir -----------------
+# $1 is a human label (e.g. "pulse/feature-x"); '.' and ':' are stripped since
+# they collide with tmux's session:window.pane target syntax.
+open_session() {
+    local label=$1 dir=$2 session tmux_running
+    session=$(printf '%s' "$label" | tr '.:' '__')
+    tmux_running=$(pgrep tmux || true)
+
+    if [[ -z ${TMUX:-} ]] && [[ -z $tmux_running ]]; then
+        tmux new-session -s "$session" -c "$dir"
+        return
+    elif [[ -z ${TMUX:-} ]]; then
+        tmux attach-session -t "$session" 2>/dev/null || \
+            tmux new-session -s "$session" -c "$dir"
+        return
+    fi
+
+    if ! tmux has-session -t="$session" 2>/dev/null; then
+        tmux new-session -ds "$session" -c "$dir"
+    fi
+    tmux switch-client -t "$session"
+}
+
+# --- subcommand: clone -------------------------------------------------------
+cmd_clone() {
+    local url=${1:-}
+    if [[ -z $url ]]; then
+        # `|| true`: fzf exits non-zero on Esc (130) and on "no match" (1) — and
+        # with empty input a match is impossible, so Enter always returns 1.
+        # Without the guard, `set -e` would kill the script before the empty-check.
+        url=$(printf '' | fzf --print-query --prompt 'git url> ' --height 40% 2>/dev/null | head -1) || true
+    fi
+
+    url=$(printf '%s' "$url" | tr -d '[:space:]')
+    [[ -z $url ]] && exit 0
+
+    # Validate that the input looks like a git URL before touching the filesystem.
+    # Accepted forms: scheme URLs (https/git/ssh/file/…) and scp-style git@host:path.
+    if ! [[ $url =~ ^[a-zA-Z][a-zA-Z0-9+.-]*://[^[:space:]]+/[^[:space:]]+$ || \
+            $url =~ ^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+:[^[:space:]]+$ ]]; then
+        echo "tmux-worktree: '$url' doesn't look like a git URL" >&2
+        exit 1
+    fi
+
+    local name dest branch target
+    name=$(basename "$url"); name=${name%.git}
+    [[ -z $name ]] && { echo "tmux-worktree: could not derive a repo name from '$url'" >&2; exit 1; }
+    dest="$dev_dir/$name"
+
+    if [[ ! -d $dest ]]; then
+        mkdir -p "$dest"
+        # Tear down a half-built dir on failure or interrupt so it isn't mistaken
+        # for a finished clone on the next run.
+        trap 'rm -rf "$dest"' ERR INT TERM
+
+        # Bare clone into .git so the dir looks like a normal project root.
+        git clone --bare "$url" "$dest/.git"
+
+        # Rewrite the refspec so future fetches update remote-tracking refs
+        # (refs/remotes/origin/*), which is what worktree branches expect.
+        git --git-dir="$dest/.git" config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+        git --git-dir="$dest/.git" fetch origin --tags --quiet || true
+
+        branch=$(git --git-dir="$dest/.git" symbolic-ref --short HEAD)
+        git --git-dir="$dest/.git" worktree add "$dest/$branch" "$branch"
+        git -C "$dest/$branch" branch --set-upstream-to="origin/$branch" "$branch" >/dev/null 2>&1 || true
+
+        trap - ERR INT TERM
+    else
+        branch=$(git --git-dir="$dest/.git" symbolic-ref --short HEAD 2>/dev/null || echo "")
+        if [[ -z $branch || ! -d "$dest/$branch" ]]; then
+            branch=$(find "$dest" -mindepth 1 -maxdepth 1 -type d ! -name '.git' -exec basename {} \; 2>/dev/null | head -1) || true
+        fi
+    fi
+
+    target="$dest"
+    local label=$name
+    if [[ -n ${branch:-} && -d "$dest/$branch" ]]; then
+        target="$dest/$branch"
+        label="$name/$branch"
+    fi
+    open_session "$label" "$target"
+}
+
+# --- subcommand: new ---------------------------------------------------------
+cmd_new() {
+    local common root project name dir
+    if ! common=$(git rev-parse --git-common-dir 2>/dev/null); then
+        echo "tmux-worktree new: run this from inside a git repository" >&2
+        exit 1
+    fi
+    common=$(cd "$common" && pwd)   # absolutize (may be returned relative)
+    root=$(dirname "$common")       # project root holds .git + the worktree dirs
+    project=$(basename "$root")
+
+    name=${1:-}
+    if [[ -z $name ]]; then
+        name=$(printf '' | fzf --print-query --prompt "new worktree in $project> " --height 40% 2>/dev/null | head -1) || true
+    fi
+    name=$(printf '%s' "$name" | tr -d '[:space:]')
+    [[ -z $name ]] && exit 0
+
+    # Keep the name a single safe path segment: no slashes, no leading dot, not .git.
+    if [[ $name == .git || $name == */* || $name == .* ]]; then
+        echo "tmux-worktree new: invalid worktree name '$name'" >&2
+        exit 1
+    fi
+
+    dir="$root/$name"
+    if [[ -d $dir ]]; then
+        echo "tmux-worktree: worktree '$name' already exists — switching to it" >&2
+    elif git show-ref --quiet --verify "refs/heads/$name"; then
+        # Branch already exists — attach a worktree to it.
+        git worktree add "$dir" "$name"
+    else
+        # New branch off the current HEAD (wherever you ran this from).
+        git worktree add "$dir" -b "$name"
+    fi
+
+    open_session "$project/$name" "$dir"
+}
+
+# --- dispatch ----------------------------------------------------------------
+usage() {
+    cat >&2 <<'EOF'
+usage: tmux-worktree <command> [args]
+  clone [git-url]   clone a repo into a bare+worktree layout under ~/developer
+  new [name]        create a worktree (dir = branch = session = name) in this repo
+(switch between worktrees with tmux-sessionizer — they appear as project/branch)
+EOF
+}
+
+case ${1:-} in
+    clone)  shift; cmd_clone "${1:-}" ;;
+    new)    shift; cmd_new "${1:-}" ;;
+    -h|--help|"") usage; exit 0 ;;
+    *)      usage; exit 1 ;;
+esac

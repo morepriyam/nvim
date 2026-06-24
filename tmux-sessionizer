@@ -1,32 +1,65 @@
-
 #!/usr/bin/env bash
+#
+# tmux-sessionizer — fuzzy-pick a project or git worktree and open/switch to a
+# tmux session rooted there. Worktrees of bare-repo projects (see tmux-worktree)
+# are listed individually as "project/branch", so a single fzf finds both whole
+# projects and the specific worktree you want.
+
+search_dirs=("$HOME/developer" "$HOME/.config")
 
 if [[ $# -eq 1 ]]; then
     selected=$1
+    label=$(basename "$selected")
 else
-    selected=$(find ~/developer ~/.config ~/downloads ~/documents -mindepth 1 -maxdepth 1 -type d | fzf)
+    # Candidates are "label<TAB>abspath": each plain dir as itself, and each git
+    # project expanded into one entry per worktree (label relative to its root).
+    choice=$(
+        for root in "${search_dirs[@]}"; do
+            [[ -d $root ]] || continue
+            # git reports physically-resolved worktree paths, so strip the
+            # physical root (handles a symlinked $HOME) to label them relatively.
+            root_phys=$(cd "$root" && pwd -P)
+            for d in "$root"/*/; do
+                d=${d%/}
+                [[ -d $d ]] || continue
+                if [[ -e "$d/.git" ]]; then
+                    git --git-dir="$d/.git" worktree list --porcelain 2>/dev/null | awk '
+                        /^worktree / { wt = substr($0, 10) }
+                        /^bare$/     { bare = 1 }
+                        /^$/         { if (wt && !bare) print wt; wt = ""; bare = 0 }
+                        END          { if (wt && !bare) print wt }
+                    ' | while read -r wt; do
+                        printf '%s\t%s\n' "${wt#"$root_phys"/}" "$wt"
+                    done
+                else
+                    printf '%s\t%s\n' "$(basename "$d")" "$d"
+                fi
+            done
+        done | sort -u | fzf --delimiter '\t' --with-nth 1 --prompt 'session> ' --height 40%
+    )
+    [[ -z $choice ]] && exit 0
+    label=${choice%%$'\t'*}
+    selected=${choice#*$'\t'}
 fi
 
-if [[ -z $selected ]]; then
+[[ -z ${selected:-} ]] && exit 0
+
+# '.' and ':' collide with tmux's session:window.pane target syntax; '/' is kept
+# so worktree sessions read as "project/branch" and match tmux-worktree's naming.
+selected_name=$(printf '%s' "$label" | tr '.:' '__')
+tmux_running=$(pgrep tmux || true)
+
+if [[ -z ${TMUX:-} ]] && [[ -z $tmux_running ]]; then
+    tmux new-session -s "$selected_name" -c "$selected"
+    exit 0
+elif [[ -z ${TMUX:-} ]]; then
+    tmux attach-session -t "$selected_name" 2>/dev/null || \
+    tmux new-session -s "$selected_name" -c "$selected"
     exit 0
 fi
 
-selected_name=$(basename "$selected" | tr . _)
-tmux_running=$(pgrep tmux)
-
-if [[ -z $TMUX ]] && [[ -z $tmux_running ]]; then
-    tmux new-session -s $selected_name -c "$selected"
-    exit 0
-elif [[ -z $TMUX ]]; then
-    tmux attach-session -t $selected_name 2>/dev/null || \
-    tmux new-session -s $selected_name -c "$selected"
-    exit 0
+if ! tmux has-session -t="$selected_name" 2> /dev/null; then
+    tmux new-session -ds "$selected_name" -c "$selected"
 fi
 
-if ! tmux has-session -t=$selected_name 2> /dev/null; then
-    tmux new-session -ds $selected_name -c "$selected"
-else
-    tmux send-keys -t $selected_name "cd '$selected'" C-m
-fi
-
-tmux switch-client -t $selected_name
+tmux switch-client -t "$selected_name"

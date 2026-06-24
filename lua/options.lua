@@ -52,6 +52,27 @@ vim.keymap.set("n", "<C-d>", "<C-d>zz", {})
 -- Navigate (split/pane navigation handled by vim-tmux-navigator: <C-h/j/k/l>)
 vim.keymap.set("n", "<Leader>W", ":set wrap!<CR>", {})
 
+-- <Leader>gC: clone a repo as a bare-repo + worktree under ~/developer and
+-- switch the tmux session to it (mirrors the tmux `prefix o` popup).
+vim.keymap.set("n", "<Leader>gC", function()
+	vim.ui.input({ prompt = "git url: " }, function(url)
+		if not url or url == "" then
+			return
+		end
+		vim.fn.jobstart({ vim.fn.expand("~/.local/bin/tmux-clone"), url }, {
+			on_exit = function(_, code)
+				vim.schedule(function()
+					if code == 0 then
+						vim.notify("tmux-clone: done")
+					else
+						vim.notify("tmux-clone: failed (exit " .. code .. ")", vim.log.levels.ERROR)
+					end
+				end)
+			end,
+		})
+	end)
+end, { desc = "Clone repo (bare + worktree)" })
+
 -- Exit terminal mode with a double-tap of <Esc>. A single <Esc> is left alone
 -- so it still reaches terminal programs that use it (e.g. Claude Code's interrupt).
 vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })

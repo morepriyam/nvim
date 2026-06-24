@@ -178,6 +178,7 @@ Defined in [`lua/options.lua`](lua/options.lua).
 | Key | Mode | Action |
 |-----|------|--------|
 | `<leader>W` | n | Toggle line wrap |
+| `<leader>gC` | n | Clone a repo as a bare-repo + worktree under `~/developer` and switch tmux session (prompts for URL; runs **tmux-clone**) |
 | `<Esc><Esc>` | t | Exit terminal mode (double-tap; single `<Esc>` passes through to the program) |
 
 ### Behavioral defaults set here
@@ -459,7 +460,8 @@ From [`.tmux.conf`](.tmux.conf).
 | `<prefix> k` | Resize pane up by 5 (repeatable) |
 | `<prefix> l` | Resize pane right by 5 (repeatable) |
 | `<prefix> m` | Toggle pane zoom / maximize (repeatable) |
-| `<prefix> f` | Run **tmux-sessionizer** in a new window (project switcher) |
+| `<prefix> f` | Run **tmux-sessionizer** in a floating popup (project switcher) |
+| `<prefix> o` | Run **tmux-clone** in a popup: paste a git URL → bare-repo + worktree under `~/developer`, then switch to it |
 | `<C-h/j/k/l>` | Move between vim splits **and** tmux panes seamlessly (vim-tmux-navigator — **no prefix**) |
 
 **Disabled defaults** (rebound away in your config):
