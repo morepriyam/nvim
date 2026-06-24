@@ -69,6 +69,7 @@ return {
 					vim.keymap.set("n", "gr", require("telescope.builtin").lsp_references, opts)
 					vim.keymap.set({ "n", "v" }, "<Leader>ca", vim.lsp.buf.code_action, opts)
 					vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
+					vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, opts) -- full error/warning message at cursor
 
 					local client = vim.lsp.get_client_by_id(ev.data.client_id)
 
@@ -237,6 +238,7 @@ return {
 							vim.keymap.set("n", "gr", require("telescope.builtin").lsp_references, opts)
 							vim.keymap.set({ "n", "v" }, "<Leader>ca", vim.lsp.buf.code_action, opts)
 							vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
+							vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, opts) -- full error/warning message at cursor
 							vim.keymap.set("n", "<Leader>df", function()
 								jdtls.test_class()
 							end, opts)
